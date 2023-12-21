@@ -10,6 +10,10 @@ $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
 
+# TODO: Get Windows server version, if newer than 2016, add this
+# Also check Win10 / 11 compat
+$2016_AND_NEWER_COLLECTORS=",time"
+
 # textfile collector dir is created by MSI, defaults to C:\Program Files\windows_exporter\textfile_inputs
 
 function IsDomainController {
