@@ -66,6 +66,14 @@ function IsMSSQLInstalled {
     }
 }
 
+function IsNT10OrBetter {
+    if ([System.Environment]::OSVersion.Version).Major -ge 10) {
+        return $true
+    } else {
+        return $false
+    }
+}
+
 # Script entry point
 
 try {
@@ -85,6 +93,9 @@ if (IsIISInstalled) {
 }
 if (IsMSSQLInstalled) {
     $COLLECTORS = $COLLECTORS + $MSSQL_COLLECTOR
+}
+if (IsNT10OrBetter) {
+    $COLLECTORS = $COLLECTORS + $2016_AND_NEWER_COLLECTORS
 }
 
 Write-Output "Installing $MSI_FILE with collectors: $COLLECTORS"
