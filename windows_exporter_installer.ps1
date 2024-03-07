@@ -1,6 +1,6 @@
 # windows_exporter installer script
-# (C) 2023 Orsiris de Jong - NetInvent
-# Script ver 2023110201
+# Written in 2023-2024 by Orsiris de Jong - NetInvent
+# Script ver 2024030701
 
 
 $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
@@ -18,7 +18,7 @@ $2016_AND_NEWER_COLLECTORS=",time"
 
 function IsDomainController {
     
-    $Role = Get-Wmiobject -Class ‘Win32_computersystem’ -ErrorAction Stop
+    $Role = Get-Wmiobject -Class "Win32_computersystem" -ErrorAction Stop
     If ($Role) {
         #Switch ($Role.pcsystemtype) {
         #    "1"     {} # "Desktop"
@@ -59,15 +59,12 @@ function IsIISInstalled {
 }
 
 function IsMSSQLInstalled {
-    if (Test-Path “HKLM:\Software\Microsoft\Microsoft SQL Server\Instance Names\SQL”) {
-    return $true
-    } Else {
-    return $false
-    }
+    $SQLPath = "HKLM:\Software\Microsoft\Microsoft SQL Server\Instance Names\SQL"
+    return Test-Path $SQLPath
 }
 
 function IsNT10OrBetter {
-    if ([System.Environment]::OSVersion.Version).Major -ge 10) {
+    if (([System.Environment]::OSVersion.Version).Major -ge 10) {
         return $true
     } else {
         return $false
