@@ -8,4 +8,4 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`dir windows_exporter*.msi /b/s`) DO (
 SET msi_file=%%F
 )
 
-powershell -ExecutionPolicy Bypass -NonInteractive -NoLogo %curdir%\windows_exporter_install.ps1
+powershell -ExecutionPolicy Bypass -NonInteractive -NoLogo -File %curdir%\windows_exporter_installer.ps1
