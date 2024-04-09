@@ -11,6 +11,7 @@
 
 
 $windows_exporter_msi_url = "https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.1/windows_exporter-0.25.1-amd64.msi"
+$storage_script_path = "C:\NPF\SCRIPTS"
 
 $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
 $LISTEN_PORT=9182
@@ -95,23 +96,25 @@ function IsNT10OrBetter {
 }
 
 function SetupStorageHealth {
-    $result = New-Item -ItemType Directory -Force -Path "C:\NPF\SCRIPTS"
+    $result = New-Item -ItemType Directory -Force -Path $storage_script_path
     if ($result -ne $null) {
-        Write-Output "Directory C:\NPF\SCRIPTS created"
+        Write-Output "Directory $storage_script_path created"
     } else {
-        Write-Output "Directory C:\NPF\SCRIPTS creation failed"
+        Write-Output "Directory $storage_script_path creation failed"
         exit 1
     }
-    $result = Copy-Item "$script_path\storage_health.ps1" -Destination "C:\NPF\SCRIPTS\storage_health.ps1" -Force | Out-Null
-    if ($result -ne $null) {
-        Write-Output "File storage_health.ps1 copied to C:\NPF\SCRIPTS"
-    } else {
+    $current_storage_health_script_path = Join-Path -Path $script_path -ChildPath "storage_health.ps1"
+    $dest_storage_health_script_path = Join-Path -Path $storage_script_path -ChildPath "storage_health.ps1"
+    try {
+        Copy-Item $current_storage_health_script_path -Destination $dest_storage_health_script_path -Force | Out-Null
+    } catch {
         Write-Output "File storage_health.ps1 copy failed"
         exit 1
     }
     $taskname = "Windows_exporter Storage Health"
     $taskdescription = "Collects storage health information and sends info to textcollector directory for windows_exporter to pickup"
-    $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\NPF\SCRIPTS\storage_health.ps1"'
+    $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dest_storage_health_script_path`""
+    $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $arguments
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
     $task = Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue
@@ -119,6 +122,7 @@ function SetupStorageHealth {
         Write-Output "Task $taskname already exists. Deleting it."
         Unregister-ScheduledTask -TaskName $taskname -Confirm:$false | Out-Null
     }
+
     $result = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $taskname -Description $taskdescription -Runlevel Highest -Settings $settings -User "System" | Out-Null
     if ($result -eq $null) {
         Write-Output "Task $taskname created"
@@ -126,6 +130,7 @@ function SetupStorageHealth {
         Write-Output "Task $taskname creation failed"
         exit 1
     }
+    Get-ScheduledTask -TaskName $taskname | Start-ScheduledTask
 }
 
 # Script entry point
