@@ -1,6 +1,9 @@
 # windows_exporter installer script
 # Written in 2023-2024 by Orsiris de Jong - NetInvent
-# Script ver 2024030701
+# Script ver 2024040901
+
+# Changelog
+# 2024-04-09: Add optional Hyper-V collector
 
 
 $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
@@ -9,6 +12,7 @@ $BASIC_PROFILE="[defaults],cpu_info,logon,memory,tcp,textfile,service"
 $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
+$HYPERV_COLLECTOR=",hyperv"
 
 # TODO: Get Windows server version, if newer than 2016, add this
 # Also check Win10 / 11 compat
@@ -60,7 +64,11 @@ function IsIISInstalled {
 
 function IsMSSQLInstalled {
     $SQLPath = "HKLM:\Software\Microsoft\Microsoft SQL Server\Instance Names\SQL"
-    return Test-Path $SQLPath
+    return Test-Path $SQLPath
+}
+
+function IsHyperVInstalled {
+    return (Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V).State
 }
 
 function IsNT10OrBetter {
@@ -90,6 +98,9 @@ if (IsIISInstalled) {
 }
 if (IsMSSQLInstalled) {
     $COLLECTORS = $COLLECTORS + $MSSQL_COLLECTOR
+}
+if (IsHyperVInstalled) {
+    $COLLECTORS = $COLLECTORS + $HYPERV_COLLECTOR
 }
 if (IsNT10OrBetter) {
     $COLLECTORS = $COLLECTORS + $2016_AND_NEWER_COLLECTORS
