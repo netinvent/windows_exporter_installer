@@ -3,8 +3,14 @@
 # Script ver 2024040901
 
 # Changelog
-# 2024-04-09: Add optional Hyper-V collector
+# 2024-04-09: - Add optional Hyper-V collector
+#             - Uninstall previous windows_exporter versions
+#             - Add storage_health script and task setup
+#             - Auto download windows_exporter last version if not present in directory
+#             - Check if the script is run as administrator
 
+
+$windows_exporter_msi_url = "https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.1/windows_exporter-0.25.1-amd64.msi"
 
 $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
 $LISTEN_PORT=9182
@@ -68,7 +74,16 @@ function IsMSSQLInstalled {
 }
 
 function IsHyperVInstalled {
-    return (Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V).State
+    try {
+        if ((Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V).State -eq "Enabled") {
+            return $true
+        } else {
+            return $false
+        }
+    } catch {
+        Write-Output "Cannot determine if Hyper-V is installed, do you have admin super powers ?"
+        exit 1
+    }
 }
 
 function IsNT10OrBetter {
@@ -79,13 +94,60 @@ function IsNT10OrBetter {
     }
 }
 
+function SetupStorageHealth {
+    $result = New-Item -ItemType Directory -Force -Path "C:\NPF\SCRIPTS"
+    if ($result -ne $null) {
+        Write-Output "Directory C:\NPF\SCRIPTS created"
+    } else {
+        Write-Output "Directory C:\NPF\SCRIPTS creation failed"
+        exit 1
+    }
+    $result = Copy-Item "$script_path\storage_health.ps1" -Destination "C:\NPF\SCRIPTS\storage_health.ps1" -Force | Out-Null
+    if ($result -ne $null) {
+        Write-Output "File storage_health.ps1 copied to C:\NPF\SCRIPTS"
+    } else {
+        Write-Output "File storage_health.ps1 copy failed"
+        exit 1
+    }
+    $taskname = "Windows_exporter Storage Health"
+    $taskdescription = "Collects storage health information and sends info to textcollector directory for windows_exporter to pickup"
+    $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\NPF\SCRIPTS\storage_health.ps1"'
+    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
+    $task = Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue
+    if ($task -ne $null) {
+        Write-Output "Task $taskname already exists. Deleting it."
+        Unregister-ScheduledTask -TaskName $taskname -Confirm:$false | Out-Null
+    }
+    $result = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $taskname -Description $taskdescription -Runlevel Highest -Settings $settings -User "System" | Out-Null
+    if ($result -eq $null) {
+        Write-Output "Task $taskname created"
+    } else {
+        Write-Output "Task $taskname creation failed"
+        exit 1
+    }
+}
+
 # Script entry point
+
+$principal = new-object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())
+if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator) -eq $false) {
+    Write-Output "You need to run this script as an administrator"
+    exit 1
+}
 
 try {
     $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
 } catch {
-    Write-Output "No windows_exporter msi file found. Please place the file in the same dir as the script."
-    exit 1
+    Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile($windows_exporter_msi_url,$script_path + "\windows_exporter.msi")
+    try {
+        $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
+    } catch {
+        Write-Output "No windows_exporter msi file to be found. Exiting"
+        exit 1
+    }
 }
 
 
@@ -106,5 +168,18 @@ if (IsNT10OrBetter) {
     $COLLECTORS = $COLLECTORS + $2016_AND_NEWER_COLLECTORS
 }
 
+# Uninstall any previous versions
+$app = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -match "windows_exporter" }
+if ($app -ne $null) {
+    Write-Output "Uninstalling previous windows_exporter"
+	$app.Uninstall() | Out-Null
+}
+
 Write-Output "Installing $MSI_FILE with collectors: $COLLECTORS"
 msiexec.exe /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT
+
+Write-Output "Setup storage health task"
+SetupStorageHealth
+
+Write-Output "Finished setup windows_exporter. Please check by running"
+Write-Output "curl localhost:9182/metrics"
