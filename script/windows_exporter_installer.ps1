@@ -97,7 +97,7 @@ function IsNT10OrBetter {
 
 function SetupStorageHealth {
     $result = New-Item -ItemType Directory -Force -Path $storage_script_path
-    if ($result -ne $null) {
+    if ($null -ne $result) {
         Write-Output "Directory $storage_script_path created"
     } else {
         Write-Output "Directory $storage_script_path creation failed"
@@ -118,13 +118,13 @@ function SetupStorageHealth {
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
     $task = Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue
-    if ($task -ne $null) {
+    if ($null -ne $task) {
         Write-Output "Task $taskname already exists. Deleting it."
         Unregister-ScheduledTask -TaskName $taskname -Confirm:$false | Out-Null
     }
 
     $result = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $taskname -Description $taskdescription -Runlevel Highest -Settings $settings -User "System" | Out-Null
-    if ($result -eq $null) {
+    if ($null -eq $result) {
         Write-Output "Task $taskname created"
     } else {
         Write-Output "Task $taskname creation failed"
@@ -175,7 +175,7 @@ if (IsNT10OrBetter) {
 
 # Uninstall any previous versions
 $app = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -match "windows_exporter" }
-if ($app -ne $null) {
+if ($null -ne $app) {
     Write-Output "Uninstalling previous windows_exporter"
 	$app.Uninstall() | Out-Null
 }
