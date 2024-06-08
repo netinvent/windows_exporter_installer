@@ -1,8 +1,9 @@
 # windows_exporter installer script
 # Written in 2023-2024 by Orsiris de Jong - NetInvent
-# Script ver 2024040901
+# Script ver 2024060801
 
 # Changelog
+# 2024-06-08: - Add Hyper-V health script and task setup
 # 2024-04-09: - Add optional Hyper-V collector
 #             - Uninstall previous windows_exporter versions
 #             - Add storage_health script and task setup
@@ -11,7 +12,7 @@
 
 
 $windows_exporter_msi_url = "https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.1/windows_exporter-0.25.1-amd64.msi"
-$storage_script_path = "C:\NPF\SCRIPTS"
+$dest_script_path = "C:\NPF\SCRIPTS"
 
 $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
 $LISTEN_PORT=9182
@@ -95,25 +96,35 @@ function IsNT10OrBetter {
     }
 }
 
-function SetupStorageHealth {
-    $result = New-Item -ItemType Directory -Force -Path $storage_script_path
-    if ($null -ne $result) {
-        Write-Output "Directory $storage_script_path created"
+function SetupScript([string]$setup_type) {
+    if ($setup_type -eq "storage") {
+        $script = "storage_health.ps1"
+        $taskname = "Windows_exporter Storage Health"
+    } elseif ($setup_type -eq "hyperv") {
+        $script = "hyperv_health.ps1"
+        $taskname = "Windows_exporter Hyper-V Health"
     } else {
-        Write-Output "Directory $storage_script_path creation failed"
+        Write-Output "Unknown script type $setup_type"
         exit 1
     }
-    $current_storage_health_script_path = Join-Path -Path $script_path -ChildPath "storage_health.ps1"
-    $dest_storage_health_script_path = Join-Path -Path $storage_script_path -ChildPath "storage_health.ps1"
+
+    $result = New-Item -ItemType Directory -Force -Path $dest_script_path
+    if ($null -ne $result) {
+        Write-Output "Directory $dest_script_path created"
+    } else {
+        Write-Output "Directory $dest_script_path creation failed"
+        exit 1
+    }
+    $current_script_path = Join-Path -Path $script_path -ChildPath $script
+    $dest_script_path = Join-Path -Path $dest_script_path -ChildPath $script
     try {
-        Copy-Item $current_storage_health_script_path -Destination $dest_storage_health_script_path -Force | Out-Null
+        Copy-Item $current_script_path -Destination $dest_script_path -Force | Out-Null
     } catch {
-        Write-Output "File storage_health.ps1 copy failed"
+        Write-Output "File $script copy failed"
         exit 1
     }
-    $taskname = "Windows_exporter Storage Health"
-    $taskdescription = "Collects storage health information and sends info to textcollector directory for windows_exporter to pickup"
-    $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dest_storage_health_script_path`""
+    $taskdescription = "Collects $setup_type health information and sends info to textcollector directory for windows_exporter to pickup"
+    $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dest_script_path`""
     $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $arguments
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
@@ -184,7 +195,11 @@ Write-Output "Installing $MSI_FILE with collectors: $COLLECTORS"
 msiexec.exe /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT
 
 Write-Output "Setup storage health task"
-SetupStorageHealth
+SetupScript "storage"
+if (IsHyperVInstalled) {
+    Write-Output "Setup Hyper-V health task"
+    SetupScript "hyperv"
+}
 
 Write-Output "Finished setup windows_exporter. Please check by running"
 Write-Output "curl localhost:9182/metrics"
