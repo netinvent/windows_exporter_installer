@@ -25,9 +25,9 @@ $TEXT_COLLECTOR_PATH="C:\Program Files\windows_exporter\textfile_inputs"
 function GetHyperVVMState {
     # We'll exclude all machines which aren't set for automatic start, since we don't need to get VM state
 
-    $prometheus_status = "# HELP windows_hyperv_vm_status Is the vm in a bad shape
+    $prometheus_status = "# HELP windows_hyperv_vm_status '1' the vm not running
 # TYPE windows_hyperv_vm_status gauge
-# HELP windows_hyperv_vm_state Is the vm not running
+# HELP windows_hyperv_vm_state '1' if the vm in a bad shape
 # TYPE windows_hyperv_vm_state gauge`n"
 
     $vms = Get-VM | Where-Object {$_.AutomaticStartAction -eq 'Start'}
@@ -60,9 +60,9 @@ function GetHyperVVMState {
 }
 
 function GetHyperVReplicationState {
-    $prometheus_status = "# HELP windows_hyperv_replication_health_status Is the replication in bad health
+    $prometheus_status = "# HELP windows_hyperv_replication_health_status '1' if the replication in bad health
 # TYPE windows_hyperv_replication_health_status gauge
-# HELP windows_hyperv_replication_status Is replication not ongoing
+# HELP windows_hyperv_replication_status '1' if replication is not ongoing
 # TYPE windows_hyperv_replication_status gauge`n"
 
     $replications = Get-VMReplication

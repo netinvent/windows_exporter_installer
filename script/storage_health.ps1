@@ -23,9 +23,9 @@ $TEXT_COLLECTOR_PATH="C:\Program Files\windows_exporter\textfile_inputs"
 
 function GetPhysicalDiskState {
 
-    $prometheus_status = "# HELP windows_physical_disk_health_status Is the disk in bad health
+    $prometheus_status = "# HELP windows_physical_disk_health_status '1' if disk status is bad
 # TYPE windows_physical_disk_health_status gauge
-# HELP windows_physical_disk_operational_status Is the disk in bad operational state
+# HELP windows_physical_disk_operational_status '1' if disk operational status is bad
 # TYPE windows_physical_disk_operational_status gauge`n"
 
     $physical_disks = Get-PhysicalDisk
@@ -55,11 +55,11 @@ function GetPhysicalDiskState {
 
 function GetStoragePoolStatus {
 
-    $prometheus_status = "# HELP windows_storage_pool_health_status Has the storage pool health failed
+    $prometheus_status = "# HELP windows_storage_pool_health_status '1' if the storage pool health failed
 # TYPE windows_storage_pool_health_status gauge
-# HELP windows_storage_pool_operational_status Has the storage pool operational status failed
+# HELP windows_storage_pool_operational_status '1' if  the storage pool operational status failed
 # TYPE windows_storage_pool_operational_status gauge
-# HELP windows_storage_pool_is_readonly Is the storage pool in degraded readnoly status
+# HELP windows_storage_pool_is_readonly '1' if the storage pool in degraded readnoly status
 # TYPE windows_storage_pool_is_readonly gauge`n"
     $storage_pools = Get-StoragePool
 
@@ -95,9 +95,9 @@ function GetStoragePoolStatus {
 
 function GetVirtualDiskStatus {
 
-    $prometheus_status = "# HELP windows_virtual_disk_health_status Has the virtual disk health failed
+    $prometheus_status = "# HELP windows_virtual_disk_health_status '1' if the virtual disk health failed
 # TYPE windows_virtual_disk_health_status gauge
-# HELP windows_virtual_disk_operational_status Has the virtual disk operational status failed
+# HELP windows_virtual_disk_operational_status '1' if the virtual disk operational status failed
 # TYPE windows_virtual_disk_operational_status gauge`n"
     $virtual_disks = Get-VirtualDisk
 
