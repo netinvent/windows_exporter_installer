@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2024-06-14: Exclude replica VM from status
 # 2024-06-08: Initial version
 #
 # Tested on:
@@ -36,6 +37,10 @@ function GetHyperVVMState {
         if ($vm.State -eq "Running") {
             $running = 0
         } else {
+        # Avoid alerting non running replicas
+            if ((Get-VMReplication $vm).Mode -eq "Replica") {
+                continue
+            }
             $running = 1
         }
 
