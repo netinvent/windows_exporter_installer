@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2024-10-28: Add uniqueid to disks since disk serial numbers might not exist in virtual machines
 # 2024-04-05: Initial version
 #
 # Tested on:
@@ -43,11 +44,12 @@ function GetPhysicalDiskState {
         }
 
         # Don't know why they put dots at the end of a serial number, but here we are
-        $serial = $physical_disk.SerialNumber.Replace('.', '')
+        $serial = $physical_disk.SerialNumber -replace(".", "")
+        $uniqueid = $physical_disk.UniqueId
         $name = $physical_disk.FriendlyName
 
-        $prometheus_status += "windows_physical_disk_health_status{name=`"" + $name + "`",serialnumber=`"" + $serial + "`"} $healthy`n"
-        $prometheus_status += "windows_physical_disk_operational_status{name=`"" + $name + "`",serialnumber=`"" + $serial + "`"} $op`n"
+        $prometheus_status += "windows_physical_disk_health_status{name=`"" + $name + "`",serialnumber=`"" + $serial + "`",uniqueid=`"" + $uniqueid + "`"} $healthy`n"
+        $prometheus_status += "windows_physical_disk_operational_status{name=`"" + $name + "`",serialnumber=`"" + $serial + "`",uniqueid=`"" + $uniqueid + "`"} $op`n"
 
     }
     return $prometheus_status
