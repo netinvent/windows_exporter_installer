@@ -3,6 +3,7 @@
 # Script ver 2024060801
 
 # Changelog
+# 2024-10-28: - Add installation log
 # 2024-06-08: - Add Hyper-V health script and task setup
 # 2024-04-09: - Add optional Hyper-V collector
 #             - Uninstall previous windows_exporter versions
@@ -21,6 +22,10 @@ $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
 $HYPERV_COLLECTOR=",hyperv"
+
+$ScriptFullPath = $MyInvocation.MyCommand.Path
+# Start logging stdout and stderr to file
+Start-Transcript -Path "$ScriptFullPath.log" -Append
 
 # TODO: Get Windows server version, if newer than 2016, add this
 # Also check Win10 / 11 compat
@@ -203,3 +208,5 @@ if (IsHyperVInstalled) {
 
 Write-Output "Finished setup windows_exporter. Please check by running"
 Write-Output "curl localhost:9182/metrics"
+
+Stop-Transcript
