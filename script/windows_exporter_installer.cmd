@@ -8,4 +8,4 @@ set curdrive=%~d0
 ::SET msi_file=%%F
 ::)
 
-powershell -ExecutionPolicy Bypass -NonInteractive -NoLogo -File %curdir%\windows_exporter_installer.ps1
+powershell -ExecutionPolicy Bypass -NonInteractive -NoLogo -File "%curdir%\windows_exporter_installer.ps1"
