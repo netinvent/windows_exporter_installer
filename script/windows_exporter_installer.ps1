@@ -160,14 +160,19 @@ if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administ
 try {
     $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
 } catch {
-    Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
-    $WebClient = New-Object System.Net.WebClient
-    $WebClient.DownloadFile($windows_exporter_msi_url,$script_path + "\windows_exporter.msi")
     try {
-        $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
+        # Earlier Powershell versions did not return an array but just a single object
+        $MSI_FILE=(Get-ChildItem $dest_script_path -filter "windows_exporter*.msi").FullName
     } catch {
-        Write-Output "No windows_exporter msi file to be found. Exiting"
-        exit 1
+        Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.DownloadFile($windows_exporter_msi_url,$script_path + "\windows_exporter.msi")
+        try {
+            $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
+        } catch {
+            Write-Output "No windows_exporter msi file to be found. Exiting"
+            exit 1
+        }
     }
 }
 
