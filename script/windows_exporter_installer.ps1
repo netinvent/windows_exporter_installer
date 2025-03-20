@@ -1,8 +1,9 @@
 # windows_exporter installer script
-# Written in 2023-2024 by Orsiris de Jong - NetInvent
-# Script ver 2024060801
+# Written in 2023-2025 by Orsiris de Jong - NetInvent
+# Script ver 2025032001
 
 # Changelog
+# 2025-03-20: - Add automatic best git version download
 # 2024-10-28: - Add installation log
 # 2024-06-08: - Add Hyper-V health script and task setup
 # 2024-04-09: - Add optional Hyper-V collector
@@ -12,10 +13,13 @@
 #             - Check if the script is run as administrator
 
 
+$git_org = "prometheus-community"
+$git_repo = "windows_exporter"
+$filenamePattern = "windows_exporter*-amd64.msi"
+
 $windows_exporter_msi_url = "https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.1/windows_exporter-0.25.1-amd64.msi"
 $dest_script_path = "C:\NPF\SCRIPTS"
 
-$script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
 $LISTEN_PORT=9182
 $BASIC_PROFILE="[defaults],cpu_info,logon,memory,tcp,textfile,service"
 $AD_COLLECTORS=",ad,dns"
@@ -23,6 +27,12 @@ $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
 $HYPERV_COLLECTOR=",hyperv"
 
+try {
+    $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
+} catch {
+    Write-Output "Please run this script from command line (or from batch file)"
+    exit 1
+}
 $ScriptFullPath = $MyInvocation.MyCommand.Path
 # Start logging stdout and stderr to file
 Start-Transcript -Path "$ScriptFullPath.log" -Append
@@ -32,6 +42,17 @@ Start-Transcript -Path "$ScriptFullPath.log" -Append
 $2016_AND_NEWER_COLLECTORS=",time"
 
 # textfile collector dir is created by MSI, defaults to C:\Program Files\windows_exporter\textfile_inputs
+
+function DownloadGitRelease {
+    # Download current release from github
+
+    $releasesUri = "https://api.github.com/repos/$git_org/$git_repo/releases/latest"
+    $downloadUri = ((Invoke-RestMethod -Method GET -Uri $releasesUri).assets | Where-Object name -like $filenamePattern ).browser_download_url
+    $MSI_FILE = Join-Path -Path $script_path -ChildPath $(Split-Path -Path $downloadUri -Leaf)
+    Write-Output "Downloading github release to $MSI_FILE"
+    Invoke-WebRequest -Uri $downloadUri -Out $MSI_FILE
+}
+
 
 function IsDomainController {
     
@@ -159,21 +180,18 @@ if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administ
 
 try {
     $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
+    Write-Output "Found windows_exporter in $MSI_FILE"
 } catch {
-    try {
-        # Earlier Powershell versions did not return an array but just a single object
-        $MSI_FILE=(Get-ChildItem $dest_script_path -filter "windows_exporter*.msi").FullName
-    } catch {
-        Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
-        $WebClient = New-Object System.Net.WebClient
-        $WebClient.DownloadFile($windows_exporter_msi_url,$script_path + "\windows_exporter.msi")
-        try {
-            $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
-        } catch {
-            Write-Output "No windows_exporter msi file to be found. Exiting"
-            exit 1
-        }
-    }
+    Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
+    DownLoadGitRelease
+    #$WebClient = New-Object System.Net.WebClient
+    #$WebClient.DownloadFile($windows_exporter_msi_url,$script_path + "\windows_exporter.msi")
+    #try {
+    #    $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
+    #} catch {
+    #    Write-Output "No windows_exporter msi file to be found. Exiting"
+    #    exit 1
+    #}
 }
 
 
@@ -202,7 +220,7 @@ if ($null -ne $app) {
 }
 
 Write-Output "Installing $MSI_FILE with collectors: $COLLECTORS"
-msiexec.exe /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT
+msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT
 
 Write-Output "Setup storage health task"
 SetupScript "storage"
@@ -212,6 +230,6 @@ if (IsHyperVInstalled) {
 }
 
 Write-Output "Finished setup windows_exporter. Please check by running"
-Write-Output "curl localhost:9182/metrics"
+Write-Output "curl http://localhost:9182/metrics"
 
 Stop-Transcript
