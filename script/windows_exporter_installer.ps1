@@ -1,8 +1,9 @@
 # windows_exporter installer script
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
-# Script ver 2025032001
+# Script ver 2025032401
 
 # Changelog
+# 2025-03-24: - Re-enable firewall exception, disabled by upstream
 # 2025-03-20: - Add automatic best git version download
 # 2024-10-28: - Add installation log
 # 2024-06-08: - Add Hyper-V health script and task setup
@@ -17,10 +18,13 @@ $git_org = "prometheus-community"
 $git_repo = "windows_exporter"
 $filenamePattern = "windows_exporter*-amd64.msi"
 
-$windows_exporter_msi_url = "https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.1/windows_exporter-0.25.1-amd64.msi"
 $dest_script_path = "C:\NPF\SCRIPTS"
 
 $LISTEN_PORT=9182
+# Remove FirewallException if you don't want to add a firewall exception
+$ADD_LOCAL="FirewallException"
+
+
 $BASIC_PROFILE="[defaults],cpu_info,logon,memory,tcp,textfile,service"
 $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
@@ -220,7 +224,7 @@ if ($null -ne $app) {
 }
 
 Write-Output "Installing $MSI_FILE with collectors: $COLLECTORS"
-msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT
+msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL
 
 Write-Output "Setup storage health task"
 SetupScript "storage"
