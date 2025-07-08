@@ -24,8 +24,8 @@ $LISTEN_PORT=9182
 # Remove FirewallException if you don't want to add a firewall exception
 $ADD_LOCAL="FirewallException"
 
-
-$BASIC_PROFILE="[defaults],cpu_info,logon,memory,tcp,textfile,service"
+# collector logon has been replaced with terminal_servies in windows_exporter 0.31+
+$BASIC_PROFILE="[defaults],cpu_info,terminal_services,memory,tcp,textfile,service"
 $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
