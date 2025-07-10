@@ -1,8 +1,10 @@
 # windows_exporter installer script
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
-# Script ver 2025032401
+# Script ver 2025071001
 
 # Changelog
+# 2025-07-10: - Add error message on MSI install failure
+# 2025-07-07: - Update default collectors for windows_exporter 0.31+
 # 2025-03-24: - Re-enable firewall exception, disabled by upstream
 # 2025-03-20: - Add automatic best git version download
 # 2024-10-28: - Add installation log
@@ -188,14 +190,6 @@ try {
 } catch {
     Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
     DownLoadGitRelease
-    #$WebClient = New-Object System.Net.WebClient
-    #$WebClient.DownloadFile($windows_exporter_msi_url,$script_path + "\windows_exporter.msi")
-    #try {
-    #    $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
-    #} catch {
-    #    Write-Output "No windows_exporter msi file to be found. Exiting"
-    #    exit 1
-    #}
 }
 
 
@@ -223,8 +217,14 @@ if ($null -ne $app) {
 	$app.Uninstall() | Out-Null
 }
 
-Write-Output "Installing $MSI_FILE with collectors: $COLLECTORS"
+Write-Output "Installing windows exporter with following command line:"
+Write-Output "msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS=$COLLECTORS LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL"
 msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "Failed to install $MSI_FILE - See event logs"
+    Start-Sleep -s 15
+    exit 1
+}
 
 Write-Output "Setup storage health task"
 SetupScript "storage"
