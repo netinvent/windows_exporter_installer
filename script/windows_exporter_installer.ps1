@@ -3,6 +3,7 @@
 # Script ver 2025071001
 
 # Changelog
+# 2025-07-25: - Fix Downloading from git function returns too much info
 # 2025-07-10: - Add error message on MSI install failure
 # 2025-07-07: - Update default collectors for windows_exporter 0.31+
 # 2025-03-24: - Re-enable firewall exception, disabled by upstream
@@ -55,8 +56,9 @@ function DownloadGitRelease {
     $releasesUri = "https://api.github.com/repos/$git_org/$git_repo/releases/latest"
     $downloadUri = ((Invoke-RestMethod -Method GET -Uri $releasesUri).assets | Where-Object name -like $filenamePattern ).browser_download_url
     $MSI_FILE = Join-Path -Path $script_path -ChildPath $(Split-Path -Path $downloadUri -Leaf)
-    Write-Output "Downloading github release to $MSI_FILE"
+    Write-Host "Downloading github release to $MSI_FILE"
     Invoke-WebRequest -Uri $downloadUri -Out $MSI_FILE
+    return $MSI_FILE
 }
 
 
@@ -189,7 +191,12 @@ try {
     Write-Output "Found windows_exporter in $MSI_FILE"
 } catch {
     Write-Output "No windows_exporter msi file found. Trying to download a copy from github"
-    DownLoadGitRelease
+    try {
+        $MSI_FILE = DownLoadGitRelease
+    } catch {
+        Write-Error "Cannot download git release"
+        exit 1
+    }
 }
 
 
@@ -217,11 +224,12 @@ if ($null -ne $app) {
 	$app.Uninstall() | Out-Null
 }
 
+$MSI_ARGS="/passive /i $MSI_FILE ENABLED_COLLECTORS=$COLLECTORS LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL"
 Write-Output "Installing windows exporter with following command line:"
-Write-Output "msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS=$COLLECTORS LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL"
-msiexec.exe /passive /i $MSI_FILE ENABLED_COLLECTORS="$COLLECTORS" LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL
-if ($LASTEXITCODE -ne 0) {
-    Write-Output "Failed to install $MSI_FILE - See event logs"
+Write-Output "msiexec.exe $MSI_ARGS"
+$exit_code = (Start-Process -FilePath msiexec.exe -ArgumentList $MSI_ARGS -Wait -PassThru).ExitCode
+if ($exit_code -ne 0) {
+    Write-Output "Failed to install $MSI_FILE - See event logs, exit_code = $exit_code"
     Start-Sleep -s 15
     exit 1
 }
