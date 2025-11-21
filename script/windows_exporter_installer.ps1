@@ -3,6 +3,7 @@
 # Script ver 2025071001
 
 # Changelog
+# 2025-11-21: - Fix msi install path with spaces
 # 2025-07-25: - Fix Downloading from git function returns too much info
 # 2025-07-10: - Add error message on MSI install failure
 # 2025-07-07: - Update default collectors for windows_exporter 0.31+
@@ -224,7 +225,7 @@ if ($null -ne $app) {
 	$app.Uninstall() | Out-Null
 }
 
-$MSI_ARGS="/passive /i $MSI_FILE ENABLED_COLLECTORS=$COLLECTORS LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL"
+$MSI_ARGS="/passive /i `"$MSI_FILE`" ENABLED_COLLECTORS=$COLLECTORS LISTEN_PORT=$LISTEN_PORT ADDLOCAL=$ADD_LOCAL"
 Write-Output "Installing windows exporter with following command line:"
 Write-Output "msiexec.exe $MSI_ARGS"
 $exit_code = (Start-Process -FilePath msiexec.exe -ArgumentList $MSI_ARGS -Wait -PassThru).ExitCode
