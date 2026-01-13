@@ -5,7 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
-# 2026-01-13: Add HP Smart Array Event Service error detection
+# 2026-01-13: Add HP Smart Array Event Service error detection (Gen9 & Gen10 tested)
 # 2024-10-28: Add uniqueid to disks since disk serial numbers might not exist in virtual machines
 # 2024-04-05: Initial version
 #
@@ -128,7 +128,16 @@ function GetVirtualDiskStatus {
 
 function GetHPSmartArrayStatus {
     # We need to check whether Cissesrv exists
+    $service = $False
+    # HP Smart Array SAS/SATA Event Notification Service (Gen9)
     if (Get-Service "cissesrv" -ErrorAction SilentlyContinue) {
+        $service = "cissesrv"
+    }
+    # HPE Smart Array SR Event Notification Service (Gen10)
+    if (Get-Service "HpePqiESrv" -ErrorAction SilentlyContinue) {
+        $service = "HpePqiESrv"
+    }
+    if ($service) {
         # If an error is found, we'll keep the textcollector file around until it is manually deleted by a sysadmin
         $prometheus_status = "#HELP windows_hpe_smart_array_health_status '1' if array has errors`n"
         
@@ -138,7 +147,7 @@ function GetHPSmartArrayStatus {
             $prometheus_status += "windows_hpe_smart_array_health_status{} 1`n"
         } else {
             $prometheus_status += "windows_hpe_smart_array_health_status{} 0`n"
-        }
+        }a
         return $prometheus_status 
     } else {
         return ""
