@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-01-13: Add HP Smart Array Event Service error detection
 # 2024-10-28: Add uniqueid to disks since disk serial numbers might not exist in virtual machines
 # 2024-04-05: Initial version
 #
@@ -125,12 +126,33 @@ function GetVirtualDiskStatus {
     return $prometheus_status
 }
 
+function GetHPSmartArrayStatus {
+    # We need to check whether Cissesrv exists
+    if (Get-Service "cissesrv" -ErrorAction SilentlyContinue) {
+        # If an error is found, we'll keep the textcollector file around until it is manually deleted by a sysadmin
+        $prometheus_status = "#HELP windows_hpe_smart_array_health_status '1' if array has errors`n"
+        
+        # Check for CISSESRV (hp smart array event service) errors in system event log for the last 24h
+        $events = Get-EventLog System -After (Get-Date).AddDays(-1) -Source Cissesrv -EntryType Error
+        if ($events) {
+            $prometheus_status += "windows_hpe_smart_array_health_status{} 1`n"
+        } else {
+            $prometheus_status += "windows_hpe_smart_array_health_status{} 0`n"
+        }
+        return $prometheus_status 
+    } else {
+        return ""
+    }
+}
+
 
 $prometheus_status = ""
 $prometheus_status += GetPhysicalDiskState
 $prometheus_status += GetStoragePoolStatus
 $prometheus_status += GetVirtualDiskStatus
+$prometheus_status += GetHPSmartArrayStatus
 
 $prom_file = Join-Path -Path $TEXT_COLLECTOR_PATH -ChildPath "windows_storage_health.prom"
+
 # The following command forces powershell to create a UTF-8 file without BOM, see https://stackoverflow.com/a/34969243
 $null = New-Item -Force $prom_file -Value $prometheus_status
