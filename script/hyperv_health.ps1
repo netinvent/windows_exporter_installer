@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-01-25: Reword status & state help
 # 2024-06-14: Exclude replica VM from status
 # 2024-06-08: Initial version
 #
@@ -26,9 +27,9 @@ $TEXT_COLLECTOR_PATH="C:\Program Files\windows_exporter\textfile_inputs"
 function GetHyperVVMState {
     # We'll exclude all machines which aren't set for automatic start, since we don't need to get VM state
 
-    $prometheus_status = "# HELP windows_hyperv_vm_status '1' the vm not running
+    $prometheus_status = "# HELP windows_hyperv_vm_status '1' if the vm is configured for autostart but is not running else '0'
 # TYPE windows_hyperv_vm_status gauge
-# HELP windows_hyperv_vm_state '1' if the vm in a bad shape
+# HELP windows_hyperv_vm_state '1' if the vm is not in the list of good states
 # TYPE windows_hyperv_vm_state gauge`n"
 
     $vms = Get-VM | Where-Object {$_.AutomaticStartAction -eq 'Start'}
