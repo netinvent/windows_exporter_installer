@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-02-10: Only exclude VMs that are marked to not start on host start
 # 2026-01-25: Reword status & state help
 # 2024-06-14: Exclude replica VM from status
 # 2024-06-08: Initial version
@@ -32,7 +33,8 @@ function GetHyperVVMState {
 # HELP windows_hyperv_vm_state '1' if the vm is not in the list of good states
 # TYPE windows_hyperv_vm_state gauge`n"
 
-    $vms = Get-VM | Where-Object {$_.AutomaticStartAction -eq 'Start'}
+    # AutomaticStartAction can be 'Start', 'StartIfRunning' or 'Nothing'
+    $vms = Get-VM | Where-Object {$_.AutomaticStartAction -ne 'Nothing'}
 
     foreach ($vm in $vms) {    
         if ($vm.State -eq "Running") {
