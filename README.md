@@ -30,5 +30,9 @@ Else, the script will try to download a copy from Github
 
 An example Grafana Dashboard for storage health can be found in the examples directory
 
+
+### Example Hyper-V Dashboard
 ![image](img/hyper_v.png)
+
+### Example storage Dashboard
 ![image](img/storage.png)
