@@ -49,6 +49,7 @@ function GetHyperVVMState {
         }
 
         # Get list of possible OperationalStatus with
+        # Import-Module Hyper-V
         # [enum]::GetNames([Microsoft.HyperV.Powershell.VMOperationalStatus])
         # Use vm.OperationalStatus and never use vm.Status as advertised by Get-VM since it will return localized output
         # see https://stackoverflow.com/questions/79140459/hyper-v-get-vm-output-language?noredirect=1#comment139582523_79140459
