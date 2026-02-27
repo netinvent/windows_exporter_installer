@@ -162,7 +162,7 @@ function SetupScript([string]$setup_type) {
     $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dest_script_path`""
     $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $arguments
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
+    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
     $task = Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue
     if ($null -ne $task) {
         Write-Output "Task $taskname already exists. Deleting it."
