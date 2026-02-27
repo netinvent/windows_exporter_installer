@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-02-27: Add current state label to hyper-V machines
 # 2026-02-10: Only exclude VMs that are marked to not start on host start
 # 2026-01-25: Reword status & state help
 # 2024-06-14: Exclude replica VM from status
@@ -64,7 +65,7 @@ function GetHyperVVMState {
         $vmhost = (Get-VMHost).Name
 
         $prometheus_status += "windows_hyperv_vm_status{vm=`"" + $vmname + "`",host=`"" + $vmhost + "`"} $running`n"
-        $prometheus_status += "windows_hyperv_vm_state{vm=`"" + $vmname + "`",host=`"" + $vmhost + "`"} $healthy`n"
+        $prometheus_status += "windows_hyperv_vm_state{vm=`"" + $vmname + "`",host=`"" + $vmhost + "`",state=`"" + [string]$vm.OperationalStatus + "`"} $healthy`n"
 
     }
     return $prometheus_status
