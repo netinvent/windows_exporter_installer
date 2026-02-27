@@ -13,6 +13,11 @@ This is a quick cmd/powershell install script for windows_exporter that does the
 It will also install a copy of `storage_health.ps1` and `hyperv_health.ps1` into `C:\NPF\SCRIPTS` and setup a scheduled task to be executed every 5 minutes.
 This will allow `windows_exporter` to pickup additional storage health metrics and Hyper-V VM and replication metrics.
 
+- Storage health (including HPE Smart array status)
+- Hyper-V VM status (running/stopped)
+- Hyper-V VM state (list of states including Ok, snapshotting, merging, etc
+- Hyper-V VM replication
+
 Firewall port 9182 is opened by the MSI installer.
 
 ## Setup
