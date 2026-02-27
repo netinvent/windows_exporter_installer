@@ -6,6 +6,7 @@
 # 
 # Changelog
 # 2026-02-27: Add current state label to hyper-V machines
+# 2026-02-27: Allow setting healthy vm state for composite states
 # 2026-02-10: Only exclude VMs that are marked to not start on host start
 # 2026-01-25: Reword status & state help
 # 2024-06-14: Exclude replica VM from status
@@ -56,10 +57,14 @@ function GetHyperVVMState {
 
     
         $good_states = ('Ok', 'InService', 'ApplyingSnapshot', 'CreatingSnapshot', 'DeletingSnapshot', 'MergingDisks', 'ExportingVirtualMachine', 'MigratingVirtualMachine', 'BackingUpVirtualMachine', 'ModifyingUpVirtualMachine', 'StorageMigrationPhaseOne', 'StorageMigrationPhaseTwo', 'MigratingPlannedVm')
-        if ($good_states.contains([string]$vm.OperationalStatus)) {
-            $healthy = 0
-        } else {
-            $healthy = 1
+        # Assume state is bad unless OperationalStatus in in good state list
+        # Since we might have composite OperationslStatus like "InService ApplyingSnapshot",
+        # we need to check with -like "$state*" or else cumulative OperationalStatus will fail
+        $healthy = 1 
+        foreach ($state in $good_states) {
+            if ([string]$vm.OperationalStatus -like "$state*") {
+                $healthy = 0
+            }
         }
 
         $vmname = $vm.Name
