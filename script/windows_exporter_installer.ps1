@@ -1,6 +1,5 @@
 # windows_exporter installer script
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
-# Script ver 2025071001
 
 # Changelog
 # 2026-02-27: - Change stoage & hyper-v task execution interval from 5 minutes to 1 minute to have a better insight of what happens
