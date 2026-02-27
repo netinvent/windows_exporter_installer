@@ -2,7 +2,7 @@
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
 
 # Changelog
-# 2026-02-27: - Change stoage & hyper-v task execution interval from 5 minutes to 1 minute to have a better insight of what happens
+# 2026-02-27: - Change storage & hyper-v task execution interval from 5 minutes to 1 minute to have a better insight of what happens
 # 2025-11-21: - Fix msi install path with spaces
 # 2025-07-25: - Fix Downloading from git function returns too much info
 # 2025-07-10: - Add error message on MSI install failure
