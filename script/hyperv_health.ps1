@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-08-18: Add machine name exclusions
 # 2026-02-27: Add current state label to hyper-V machines
 # 2026-02-27: Allow setting healthy vm state for composite states
 # 2026-02-10: Only exclude VMs that are marked to not start on host start
@@ -26,6 +27,12 @@
 
 $TEXT_COLLECTOR_PATH="C:\Program Files\windows_exporter\textfile_inputs"
 
+# If a VM name contains the following word, avoid creating metrics for it
+$EXCLUDE_VM_CONTAINING = [PSCustomObject]@(
+    'Sandbox',
+    'Restored'
+)
+
 
 function GetHyperVVMState {
     # We'll exclude all machines which aren't set for automatic start, since we don't need to get VM state
@@ -42,10 +49,22 @@ function GetHyperVVMState {
         if ($vm.State -eq "Running") {
             $running = 0
         } else {
-        # Avoid alerting non running replicas
-            if ((Get-VMReplication $vm).Mode -eq "Replica") {
+            $ignore_vm = $False
+            foreach ($exclude_string in $EXCLUDE_VM_CONTAINING) {
+                if ($vm.Name.Contains($exclude_string) ) {
+                    $ignore_vm = $True
+                    continue
+                }
+            }
+            if ($ignore_vm -eq $True) {
                 continue
             }
+            # Avoid alerting non running replicas
+            try {
+                if ((Get-VMReplication $vm).Mode -eq "Replica") {
+                    continue
+                }
+            } catch { }
             $running = 1
         }
 
