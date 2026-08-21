@@ -2,6 +2,7 @@
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
 
 # Changelog
+# 2026-08-21: - Add script to check whether windows needs to be rebooted
 # 2026-02-27: - Change storage & hyper-v task execution interval from 5 minutes to 1 minute to have a better insight of what happens
 # 2025-11-21: - Fix msi install path with spaces
 # 2025-07-25: - Fix Downloading from git function returns too much info
@@ -138,6 +139,9 @@ function SetupScript([string]$setup_type) {
     } elseif ($setup_type -eq "hyperv") {
         $script = "hyperv_health.ps1"
         $taskname = "Windows_exporter Hyper-V Health"
+	} elseif ($setup_type -eq "needs_reboot") {
+		$script = "needs_reboot.ps1"
+		$taskname = "Windows_exporter needs_reboot"
     } else {
         Write-Output "Unknown script type $setup_type"
         exit 1
@@ -241,6 +245,7 @@ if (IsHyperVInstalled) {
     Write-Output "Setup Hyper-V health task"
     SetupScript "hyperv"
 }
+SetupScript "needs_reboot"
 
 Write-Output "Finished setup windows_exporter. Please check by running"
 Write-Output "curl http://localhost:9182/metrics"
