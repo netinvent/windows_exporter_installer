@@ -1,6 +1,6 @@
 
 <#
-# Windows check if a reboot is needeed
+# Windows check if a reboot is needed
 # 
 # Written by Orsiris de Jong - NetInvent
 # 
