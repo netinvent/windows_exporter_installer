@@ -25,6 +25,9 @@ $filenamePattern = "windows_exporter*-amd64.msi"
 
 $dest_script_path = "C:\NPF\SCRIPTS"
 
+# Version file is stored along the optional scripts, and named after this script so we know which script it belongs to
+$VERSION_FILE = Join-Path -Path $dest_script_path -ChildPath "windows_exporter_installer.version"
+
 $LISTEN_PORT=9182
 # Remove FirewallException if you don't want to add a firewall exception
 $ADD_LOCAL="FirewallException"
@@ -193,8 +196,6 @@ if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administ
 }
 
 # Check script version
-$VERSION_FILE = "C:\NPF\version.txt"
-
 try {
     if (Test-Path $VERSION_FILE) {
         $LAST_VERSION = (Get-Content -Path $VERSION_FILE -ErrorAction Stop | Select-Object -First 1).Trim()
@@ -210,8 +211,8 @@ try {
         $LAST_VERSION = 0
     }
 } catch {
-    Write-Error "Unable to read $VERSION_FILE. Script will not execute."
-    exit 1
+    Write-Output "Unable to read $VERSION_FILE. Continuing with script execution."
+    $LAST_VERSION = 0
 }
 
 if ($LAST_VERSION -ge $SCRIPT_VERSION) {
