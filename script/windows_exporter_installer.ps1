@@ -35,6 +35,7 @@ $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
 $HYPERV_COLLECTOR=",hyperv"
+$SCRIPT_VERSION = 1
 
 try {
     $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
@@ -191,6 +192,38 @@ if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administ
     exit 1
 }
 
+# Check script version
+$VERSION_FILE = "C:\NPF\version.txt"
+
+try {
+    if (Test-Path $VERSION_FILE) {
+        $LAST_VERSION = (Get-Content -Path $VERSION_FILE -ErrorAction Stop | Select-Object -First 1).Trim()
+
+        if ($LAST_VERSION -match '^\d+$') {
+            $LAST_VERSION = [int]$LAST_VERSION
+        } else {
+            Write-Output "Invalid version found in $VERSION_FILE. Continuing with script execution."
+            $LAST_VERSION = 0
+        }
+    } else {
+        Write-Output "$VERSION_FILE not found. Assuming script has never been executed."
+        $LAST_VERSION = 0
+    }
+} catch {
+    Write-Error "Unable to read $VERSION_FILE. Script will not execute."
+    exit 1
+}
+
+if ($LAST_VERSION -ge $SCRIPT_VERSION) {
+    Write-Output "Script version V$SCRIPT_VERSION has already been executed (existing version: V$LAST_VERSION)."
+    Write-Output "Script will not execute."
+    exit 0
+}
+
+Write-Output "Previous script version: V$LAST_VERSION"
+Write-Output "Current script version: V$SCRIPT_VERSION"
+Write-Output "Starting script execution."
+
 try {
     $MSI_FILE=(Get-ChildItem $script_path -filter "windows_exporter*.msi")[0].FullName
     Write-Output "Found windows_exporter in $MSI_FILE"
@@ -203,7 +236,6 @@ try {
         exit 1
     }
 }
-
 
 $COLLECTORS = $BASIC_PROFILE
 if (IsDomainController) {
@@ -249,5 +281,14 @@ SetupScript "needs_reboot"
 
 Write-Output "Finished setup windows_exporter. Please check by running"
 Write-Output "curl http://localhost:9182/metrics"
+
+# Script completed successfully
+try {
+    Set-Content -Path $VERSION_FILE -Value $SCRIPT_VERSION -Force -ErrorAction Stop
+    Write-Output "Script version V$SCRIPT_VERSION successfully recorded in $VERSION_FILE"
+} catch {
+    Write-Error "Script completed successfully, but unable to update $VERSION_FILE."
+    exit 1
+}
 
 Stop-Transcript
