@@ -2,6 +2,8 @@
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
 
 # Changelog
+# 2026-09-01: - Check if script already is installed, update only on version change
+#             - Remove TerminalServer exporter since it cannot be detected properly on langs other than en_US
 # 2026-08-21: - Add script to check whether windows needs to be rebooted
 # 2026-02-27: - Change storage & hyper-v task execution interval from 5 minutes to 1 minute to have a better insight of what happens
 # 2025-11-21: - Fix msi install path with spaces
@@ -19,6 +21,9 @@
 #             - Check if the script is run as administrator
 
 
+# Script version needs to be a float so we can easily compare with previous setups
+$SCRIPT_VERSION = [float]1.1
+
 $git_org = "prometheus-community"
 $git_repo = "windows_exporter"
 $filenamePattern = "windows_exporter*-amd64.msi"
@@ -33,12 +38,13 @@ $LISTEN_PORT=9182
 $ADD_LOCAL="FirewallException"
 
 # collector logon has been replaced with terminal_servies in windows_exporter 0.31+
-$BASIC_PROFILE="[defaults],cpu_info,terminal_services,memory,tcp,textfile,service"
+# collector "terminal_services" has been removed since it creates the following error on every metrics fetch
+# source=collect.go:220 msg="collector terminal_services failed after 21.5258ms, resulting in 20 metrics" err="failed collecting terminal services session count metrics: failed to collect Terminal Services Session metrics: performance counter not initialized. Check application logs from initialization pharse for more information"
+$BASIC_PROFILE="[defaults],cpu_info,memory,tcp,textfile,service"
 $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
 $HYPERV_COLLECTOR=",hyperv"
-$SCRIPT_VERSION = 1
 
 try {
     $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
@@ -199,18 +205,20 @@ if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administ
 try {
     if (Test-Path $VERSION_FILE) {
         $LAST_VERSION = (Get-Content -Path $VERSION_FILE -ErrorAction Stop | Select-Object -First 1).Trim()
-
-        if ($LAST_VERSION -match '^\d+$') {
-            $LAST_VERSION = [int]$LAST_VERSION
-        } else {
-            Write-Output "Invalid version found in $VERSION_FILE. Continuing with script execution."
-            $LAST_VERSION = 0
-        }
-    } else {
-        Write-Output "$VERSION_FILE not found. Assuming script has never been executed."
-        $LAST_VERSION = 0
-    }
-} catch {
+		try	{
+			$LAST_VERSION = [float]$LAST_VERSION 
+		} 
+		catch {	
+			Write-Output "$LAST_VERSION file contains garbage. Continuing with script execution"
+			$LAST_VERSION = 0
+		}
+	}
+	else {
+			Write-Output "$VERSION_FILE not found. Assuming script has never been executed."
+			$LAST_VERSION = 0
+	}
+}	
+catch {
     Write-Output "Unable to read $VERSION_FILE. Continuing with script execution."
     $LAST_VERSION = 0
 }
@@ -285,7 +293,7 @@ Write-Output "curl http://localhost:9182/metrics"
 
 # Script completed successfully
 try {
-    Set-Content -Path $VERSION_FILE -Value $SCRIPT_VERSION -Force -ErrorAction Stop
+    Set-Content -Path $VERSION_FILE -Value $SCRIPT_VERSION.ToString([cultureinfo]::InvariantCulture) -Force -ErrorAction Stop
     Write-Output "Script version V$SCRIPT_VERSION successfully recorded in $VERSION_FILE"
 } catch {
     Write-Error "Script completed successfully, but unable to update $VERSION_FILE."
