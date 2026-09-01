@@ -21,6 +21,9 @@
 #             - Check if the script is run as administrator
 
 
+# Script version needs to be a float so we can easily compare with previous setups
+$SCRIPT_VERSION = 1.1
+
 $git_org = "prometheus-community"
 $git_repo = "windows_exporter"
 $filenamePattern = "windows_exporter*-amd64.msi"
@@ -42,7 +45,6 @@ $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
 $HYPERV_COLLECTOR=",hyperv"
-$SCRIPT_VERSION = 1
 
 try {
     $script_path = Split-Path $MyInvocation.MyCommand.Path -Parent
