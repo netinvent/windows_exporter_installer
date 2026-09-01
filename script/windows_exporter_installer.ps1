@@ -22,7 +22,7 @@
 
 
 # Script version needs to be a float so we can easily compare with previous setups
-$SCRIPT_VERSION = [float]1.1
+$SCRIPT_VERSION = 1.1
 
 $git_org = "prometheus-community"
 $git_repo = "windows_exporter"
