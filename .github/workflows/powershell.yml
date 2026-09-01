@@ -1,0 +1,23 @@
+---
+    name: powershell
+    
+    on:
+      push:
+        branches: [main]
+      pull_request:
+        branches: [main]
+    
+    permissions:
+      contents: read
+
+    jobs:
+      powershell:
+        name: Check Powershell
+        runs-on: ubuntu-latest
+        steps:
+          - name: Run PSScriptAnalyzer
+            uses: microsoft/psscriptanalyzer-action@v1.0
+            with:
+             path: .\
+             recurse: true 
+             output: results.sarif
