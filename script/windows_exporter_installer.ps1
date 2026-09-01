@@ -3,7 +3,7 @@
 
 # Changelog
 # 2026-09-01: - Check if script already is installed, update only on version change
-              - Remove TerminalServer exporter since it cannot be detected properly on langs other than en_US
+#             - Remove TerminalServer exporter since it cannot be detected properly on langs other than en_US
 # 2026-08-21: - Add script to check whether windows needs to be rebooted
 # 2026-02-27: - Change storage & hyper-v task execution interval from 5 minutes to 1 minute to have a better insight of what happens
 # 2025-11-21: - Fix msi install path with spaces
