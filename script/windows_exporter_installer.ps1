@@ -205,18 +205,20 @@ if ($principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administ
 try {
     if (Test-Path $VERSION_FILE) {
         $LAST_VERSION = (Get-Content -Path $VERSION_FILE -ErrorAction Stop | Select-Object -First 1).Trim()
-
-        if ($LAST_VERSION -match '^\d+$') {
-            $LAST_VERSION = [int]$LAST_VERSION
-        } else {
-            Write-Output "Invalid version found in $VERSION_FILE. Continuing with script execution."
-            $LAST_VERSION = 0
-        }
-    } else {
-        Write-Output "$VERSION_FILE not found. Assuming script has never been executed."
-        $LAST_VERSION = 0
-    }
-} catch {
+		try	{
+			$LAST_VERSION = [float]$LAST_VERSION 
+		} 
+		catch {	
+			Write-Output "$LAST_VERSION file contains garbage. Continuing with script execution"
+			$LAST_VERSION = 0
+		}
+	}
+	else {
+			Write-Output "$VERSION_FILE not found. Assuming script has never been executed."
+			$LAST_VERSION = 0
+	}
+}	
+catch {
     Write-Output "Unable to read $VERSION_FILE. Continuing with script execution."
     $LAST_VERSION = 0
 }
@@ -291,7 +293,7 @@ Write-Output "curl http://localhost:9182/metrics"
 
 # Script completed successfully
 try {
-    Set-Content -Path $VERSION_FILE -Value $SCRIPT_VERSION -Force -ErrorAction Stop
+    Set-Content -Path $VERSION_FILE -Value $SCRIPT_VERSION.ToString([cultureinfo]::InvariantCulture) -Force -ErrorAction Stop
     Write-Output "Script version V$SCRIPT_VERSION successfully recorded in $VERSION_FILE"
 } catch {
     Write-Error "Script completed successfully, but unable to update $VERSION_FILE."
