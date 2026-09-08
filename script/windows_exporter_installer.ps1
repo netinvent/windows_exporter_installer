@@ -231,6 +231,9 @@ if ($LAST_VERSION -ge $SCRIPT_VERSION) {
     exit 0
 }
 
+# Start logging stdout and stderr to file
+Start-Transcript -Path "$ScriptFullPath.$ENV:Computername.log" -Append
+
 Write-Output "Previous script version: V$LAST_VERSION"
 Write-Output "Current script version: V$SCRIPT_VERSION"
 Write-Output "Starting script execution."
