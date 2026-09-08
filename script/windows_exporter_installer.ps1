@@ -4,6 +4,7 @@
 # Changelog
 # 2026-09-08: - Add backwards compatibility in scheduled task setup for Windows 2012 R2
 #             - Only log on actual setup, not on every script execution
+#             - Remove cpu_info collector for Windows 2012 R2 since it is not supported
 # 2026-09-01: - Check if script already is installed, update only on version change
 #             - Remove TerminalServer exporter since it cannot be detected properly on langs other than en_US
 # 2026-08-21: - Add script to check whether windows needs to be rebooted
@@ -42,7 +43,7 @@ $ADD_LOCAL="FirewallException"
 # collector logon has been replaced with terminal_servies in windows_exporter 0.31+
 # collector "terminal_services" has been removed since it creates the following error on every metrics fetch
 # source=collect.go:220 msg="collector terminal_services failed after 21.5258ms, resulting in 20 metrics" err="failed collecting terminal services session count metrics: failed to collect Terminal Services Session metrics: performance counter not initialized. Check application logs from initialization pharse for more information"
-$BASIC_PROFILE="[defaults],cpu_info,memory,tcp,textfile,service"
+$BASIC_PROFILE="[defaults],memory,tcp,textfile,service"
 $AD_COLLECTORS=",ad,dns"
 $IIS_COLLECTOR=",iis"
 $MSSQL_COLLECTOR=",mssql"
@@ -58,6 +59,7 @@ $ScriptFullPath = $MyInvocation.MyCommand.Path
 
 # TODO: Get Windows server version, if newer than 2016, add this
 # Also check Win10 / 11 compat
+# On 2012R2, cpu_info fails !!!
 $2016_AND_NEWER_COLLECTORS=",cpu_info,time"
 
 # textfile collector dir is created by MSI, defaults to C:\Program Files\windows_exporter\textfile_inputs
@@ -228,9 +230,6 @@ if ($LAST_VERSION -ge $SCRIPT_VERSION) {
     Write-Output "Script will not execute."
     exit 0
 }
-
-# Start logging stdout and stderr to file
-Start-Transcript -Path "$ScriptFullPath.$ENV:Computername.log" -Append
 
 Write-Output "Previous script version: V$LAST_VERSION"
 Write-Output "Current script version: V$SCRIPT_VERSION"
