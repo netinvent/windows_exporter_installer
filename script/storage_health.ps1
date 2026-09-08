@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-09-08: Add full file write invocation for backwards compatibility with 2012R2
 # 2026-01-13: Add HP Smart Array Event Service error detection (Gen9 & Gen10 tested)
 # 2024-10-28: Add uniqueid to disks since disk serial numbers might not exist in virtual machines
 # 2024-04-05: Initial version
@@ -164,4 +165,4 @@ $prometheus_status += GetHPSmartArrayStatus
 $prom_file = Join-Path -Path $TEXT_COLLECTOR_PATH -ChildPath "windows_storage_health.prom"
 
 # The following command forces powershell to create a UTF-8 file without BOM, see https://stackoverflow.com/a/34969243
-$null = New-Item -Force $prom_file -Value $prometheus_status
+$null = New-Item -Force -ItemType File -Path $prom_file -Value $prometheus_status

@@ -5,6 +5,7 @@
 # Written by Orsiris de Jong - NetInvent
 # 
 # Changelog
+# 2026-09-08: Add full file write invocation for backwards compatibility with 2012R2
 # 2026-08-18: Add machine name exclusions
 # 2026-02-27: Add current state label to hyper-V machines
 # 2026-02-27: Allow setting healthy vm state for composite states
@@ -135,4 +136,4 @@ $prometheus_status += GetHyperVReplicationState
 
 $prom_file = Join-Path -Path $TEXT_COLLECTOR_PATH -ChildPath "hyperv_health.prom"
 # The following command forces powershell to create a UTF-8 file without BOM, see https://stackoverflow.com/a/34969243
-$null = New-Item -Force $prom_file -Value $prometheus_status
+$null = New-Item -Force -ItemType File -Path $prom_file -Value $prometheus_status
