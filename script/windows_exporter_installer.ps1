@@ -25,7 +25,7 @@
 
 
 # Script version needs to be a float so we can easily compare with previous setups
-$SCRIPT_VERSION = 1.1
+$SCRIPT_VERSION = 1.2
 
 $git_org = "prometheus-community"
 $git_repo = "windows_exporter"
@@ -178,7 +178,14 @@ function SetupScript([string]$setup_type) {
     $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dest_script_path`""
     $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $arguments
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
+    if ($PSVersionTable.PSVersion.Major -lt 5) {
+        # Server 2012 R2 / PS 4.0 rejects an indefinite RepetitionDuration (e.g. [TimeSpan]::MaxValue),
+        # so an explicit long duration is required there. Newer OS/PS versions repeat indefinitely
+        # when -RepetitionDuration is omitted.
+        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 3650)
+    } else {
+        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
+    }
     $task = Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue
     if ($null -ne $task) {
         Write-Output "Task $taskname already exists. Deleting it."
