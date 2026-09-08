@@ -3,6 +3,7 @@
 
 # Changelog
 # 2026-09-08: - Add backwards compatibility in scheduled task setup for Windows 2012 R2
+#             - Only log on actual setup, not on every script execution
 # 2026-09-01: - Check if script already is installed, update only on version change
 #             - Remove TerminalServer exporter since it cannot be detected properly on langs other than en_US
 # 2026-08-21: - Add script to check whether windows needs to be rebooted
@@ -54,12 +55,10 @@ try {
     exit 1
 }
 $ScriptFullPath = $MyInvocation.MyCommand.Path
-# Start logging stdout and stderr to file
-Start-Transcript -Path "$ScriptFullPath.log" -Append
 
 # TODO: Get Windows server version, if newer than 2016, add this
 # Also check Win10 / 11 compat
-$2016_AND_NEWER_COLLECTORS=",time"
+$2016_AND_NEWER_COLLECTORS=",cpu_info,time"
 
 # textfile collector dir is created by MSI, defaults to C:\Program Files\windows_exporter\textfile_inputs
 
@@ -229,6 +228,9 @@ if ($LAST_VERSION -ge $SCRIPT_VERSION) {
     Write-Output "Script will not execute."
     exit 0
 }
+
+# Start logging stdout and stderr to file
+Start-Transcript -Path "$ScriptFullPath.$ENV:Computername.log" -Append
 
 Write-Output "Previous script version: V$LAST_VERSION"
 Write-Output "Current script version: V$SCRIPT_VERSION"
