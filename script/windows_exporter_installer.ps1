@@ -2,6 +2,7 @@
 # Written in 2023-2025 by Orsiris de Jong - NetInvent
 
 # Changelog
+# 2026-09-08: - Add backwards compatibility in scheduled task setup for Windows 2012 R2
 # 2026-09-01: - Check if script already is installed, update only on version change
 #             - Remove TerminalServer exporter since it cannot be detected properly on langs other than en_US
 # 2026-08-21: - Add script to check whether windows needs to be rebooted
@@ -176,7 +177,7 @@ function SetupScript([string]$setup_type) {
     $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dest_script_path`""
     $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument $arguments
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
+    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
     $task = Get-ScheduledTask -TaskName $taskname -ErrorAction SilentlyContinue
     if ($null -ne $task) {
         Write-Output "Task $taskname already exists. Deleting it."
