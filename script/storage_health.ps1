@@ -24,6 +24,20 @@
 
 $TEXT_COLLECTOR_PATH="C:\Program Files\windows_exporter\textfile_inputs"
 
+# Prometheus label values must not contain characters like '\' or '"' unescaped.
+# Replace anything outside [A-Za-z0-9.-] with '_', then collapse runs of 3+ '_' into one.
+function SanitizeLabelValue {
+    param(
+        [string]$Value
+    )
+    if ([string]::IsNullOrEmpty($Value)) {
+        return $Value
+    }
+    $sanitized = $Value -replace '[^A-Za-z0-9.-]', '_'
+    $sanitized = $sanitized -replace '_{3,}', '_'
+    return $sanitized
+}
+
 function GetPhysicalDiskState {
 
     $prometheus_status = "# HELP windows_physical_disk_health_status '1' if disk status is bad
@@ -46,9 +60,9 @@ function GetPhysicalDiskState {
         }
 
         # Don't know why they put dots at the end of a serial number, but here we are
-        $serial = $physical_disk.SerialNumber -replace(".", "")
-        $uniqueid = $physical_disk.UniqueId
-        $name = $physical_disk.FriendlyName
+        $serial = SanitizeLabelValue ($physical_disk.SerialNumber -replace(".", ""))
+        $uniqueid = SanitizeLabelValue $physical_disk.UniqueId
+        $name = SanitizeLabelValue $physical_disk.FriendlyName
 
         $prometheus_status += "windows_physical_disk_health_status{name=`"" + $name + "`",serialnumber=`"" + $serial + "`",uniqueid=`"" + $uniqueid + "`"} $healthy`n"
         $prometheus_status += "windows_physical_disk_operational_status{name=`"" + $name + "`",serialnumber=`"" + $serial + "`",uniqueid=`"" + $uniqueid + "`"} $op`n"
@@ -85,7 +99,7 @@ function GetStoragePoolStatus {
             $readonly = 1
         }
 
-        $name = $storage_pool.FriendlyName
+        $name = SanitizeLabelValue $storage_pool.FriendlyName
         $primordial = $storage_pool.IsPrimordial
 
         $prometheus_status += "windows_storage_pool_health_status{name=`"" + $name + "`",primordial=`"" + $primordial + "`"} $healthy`n"
@@ -118,7 +132,7 @@ function GetVirtualDiskStatus {
         }
 
 
-        $name = $virtual_disk.FriendlyName
+        $name = SanitizeLabelValue $virtual_disk.FriendlyName
 
         $prometheus_status += "windows_virtual_disk_health_status{name=`"" + $name + "`"} $healthy`n"
         $prometheus_status += "windows_virtual_disk_operational_status{name=`"" + $name + "`"} $op`n"
