@@ -162,7 +162,7 @@ function GetHPSmartArrayStatus {
             $prometheus_status += "windows_hpe_smart_array_health_status{} 1`n"
         } else {
             $prometheus_status += "windows_hpe_smart_array_health_status{} 0`n"
-        }a
+        }
         return $prometheus_status 
     } else {
         return ""
